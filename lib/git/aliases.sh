@@ -26,8 +26,10 @@ if type hub > /dev/null 2>&1; then export _git_cmd="hub"; fi
 function git(){
   # Only expand args for git commands that deal with paths or branches
   case $1 in
-    checkout|commit|rm|blame|diff|add|log|rebase)
+    commit|blame|add|log|rebase|merge)
       exec_scmb_expand_args "$_git_cmd" "$@";;
+    checkout|diff|rm|reset)
+      exec_scmb_expand_args --relative "$_git_cmd" "$@";;
     branch)
       _scmb_git_branch_shortcuts "${@:2}";;
     *)
@@ -88,19 +90,23 @@ if [ "$git_setup_aliases" = "yes" ]; then
   # Commands that deal with paths
   __git_alias "$git_checkout_alias"    "git" "checkout"
   __git_alias "$git_commit_alias"      "git" "commit"
-  __git_alias "$git_reset_alias"       "git" "reset"
-  __git_alias "$git_reset_del_alias"   "git" "reset" "--"
+  __git_alias "$git_commit_verbose_alias" "git" "commit" "--verbose"
+  __git_alias "$git_reset_alias"       "git" "reset" "--"
   __git_alias "$git_reset_hard_alias"  "git" "reset" "--hard"
   __git_alias "$git_rm_alias"          "git" "rm"
   __git_alias "$git_blame_alias"       "git" "blame"
-  __git_alias "$git_diff_alias"        "git" "diff"
+  __git_alias "$git_diff_alias"        "git" "diff" "--"
   __git_alias "$git_diff_word_alias"   "git" "diff" "--word-diff"
-  __git_alias "$git_diff_cached_alias" "git" "diff" "--cached"
+  __git_alias "$git_diff_cached_alias" "git" "diff" "--cached --"
   __git_alias "$git_add_patch_alias"   "git" "add" "-p"
+  __git_alias "$git_add_updated_alias"   "git" "add" "-u"
   __git_alias "$git_difftool_alias"    "git" "difftool"
   # Custom default format for git log
   git_log_command="log --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit"
   __git_alias "$git_log_alias" "git" "$git_log_command"
+
+  # Same as the above, but displays all the branches and remotes
+  __git_alias "$git_log_all_alias" "git" "$git_log_command" "--branches" "--remotes"
 
   # Standard commands
   __git_alias "$git_clone_alias" "git" 'clone'
@@ -120,11 +126,14 @@ if [ "$git_setup_aliases" = "yes" ]; then
   __git_alias "$git_rebase_alias_abort" "git" 'rebase' "--abort"
   __git_alias "$git_reset_last_commit" "git" "reset HEAD~"
   __git_alias "$git_merge_alias" "git" 'merge'
+  __git_alias "$git_merge_no_fast_forward_alias" "git" "merge" "--no-ff"
+  __git_alias "$git_merge_only_fast_forward_alias" "git" "merge" "--ff"
   __git_alias "$git_cherry_pick_alias" "git" 'cherry-pick'
   __git_alias "$git_show_alias" "git" 'show'
   __git_alias "$git_show_summary" "git" 'show' '--summary'
   __git_alias "$git_stash_alias" "git" 'stash'
   __git_alias "$git_stash_apply_alias" "git" 'stash' 'apply'
+  __git_alias "$git_stash_pop_alias" "git" 'stash' 'pop'
   __git_alias "$git_stash_list_alias" "git" 'stash' 'list'
   __git_alias "$git_tag_alias" "git" 'tag'
 
@@ -139,7 +148,7 @@ if [ "$git_setup_aliases" = "yes" ]; then
   _alias $git_commit_no_msg_alias='git commit -C HEAD'
   _alias $git_log_stat_alias='git log --stat --max-count=5'
   _alias $git_log_graph_alias='git log --graph --max-count=5'
-  _alias $git_add_all_alias='git add -A'
+  _alias $git_add_all_alias='git add --all .'
 fi
 
 
@@ -156,5 +165,7 @@ if [ $shell = "bash" ]; then
   # If you know how to rewrite _git_index_tab_completion() for zsh, please send me a pull request!
   complete -o nospace -F _git_index_tab_completion git_index
   complete -o nospace -F _git_index_tab_completion $git_index_alias
+else
+  compdef _git_index_tab_completion git_index $git_index_alias
 fi
 
